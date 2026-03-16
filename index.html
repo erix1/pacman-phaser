@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAC-MAN</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            background: #111;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            image-rendering: pixelated;
+        }
+    </style>
+</head>
+<body>
+    <!-- Phaser 3 (latest stable) -->
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.88.2/dist/phaser.min.js"></script>
+
+    <!-- Constants must load first -->
+    <script src="js/constants.js"></script>
+    <script src="js/maze.js"></script>
+
+    <!-- Systems -->
+    <script src="js/systems/MazeRenderer.js"></script>
+    <script src="js/systems/ScoreSystem.js"></script>
+
+    <!-- Entities -->
+    <script src="js/entities/Pellet.js"></script>
+    <script src="js/entities/Ghost.js"></script>
+    <script src="js/entities/Pacman.js"></script>
+
+    <!-- Scenes -->
+    <script src="js/scenes/BootScene.js"></script>
+    <script src="js/scenes/StartScene.js"></script>
+    <script src="js/scenes/GameScene.js"></script>
+    <script src="js/scenes/EndScene.js"></script>
+
+    <script>
+        const config = {
+            type: Phaser.AUTO,
+            width: 28 * 16,   // 448
+            height: 31 * 16 + 48, // 544
+            backgroundColor: '#000000',
+            scene: [BootScene, StartScene, GameScene, EndScene],
+            scale: {
+                mode: Phaser.Scale.FIT,
+                autoCenter: Phaser.Scale.CENTER_BOTH,
+            },
+            audio: { noAudio: true },
+        };
+
+        window.game = new Phaser.Game(config);
+    </script>
+</body>
+</html>
