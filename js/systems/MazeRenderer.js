@@ -25,7 +25,7 @@ class MazeRenderer {
                     g.fillRect(x + 2, y + 2, TILE_SIZE - 4, TILE_SIZE - 4);
                 } else if (tile === TILE.DOOR) {
                     g.fillStyle(COLORS.GHOST_HOUSE_DOOR, 1);
-                    g.fillRect(x, y + 6, TILE_SIZE * 2, 4);
+                    g.fillRect(x, y + 6, TILE_SIZE, 4);
                 }
             }
         }

@@ -18,11 +18,12 @@ class GameScene extends Phaser.Scene {
         this.pacman = new Pacman(this);
 
         // Ghosts: id, startCol, startRow, color
+        // Spread ghosts across the house rows (rows 13-15, cols 11-16 are HOUSE tiles)
         this.ghosts = [
-            new Ghost(this, 0, 13, 14, GHOST_COLORS[0]), // Blinky (red)
-            new Ghost(this, 1, 11, 14, GHOST_COLORS[1]), // Pinky
-            new Ghost(this, 2, 13, 14, GHOST_COLORS[2]), // Inky
-            new Ghost(this, 3, 15, 14, GHOST_COLORS[3]), // Clyde
+            new Ghost(this, 0, 13, 14, GHOST_COLORS[0]), // Blinky (red)   - center
+            new Ghost(this, 1, 11, 14, GHOST_COLORS[1]), // Pinky (pink)   - left
+            new Ghost(this, 2, 15, 14, GHOST_COLORS[2]), // Inky (cyan)    - right
+            new Ghost(this, 3, 13, 13, GHOST_COLORS[3]), // Clyde (orange) - top center
         ];
 
         // Input
@@ -35,8 +36,8 @@ class GameScene extends Phaser.Scene {
         });
 
         // Game state
-        this.state = 'playing'; // 'playing' | 'dying' | 'respawning' | 'won' | 'lost'
-        this.stateTimer = 0;
+        this.state = 'ready'; // 'ready' | 'playing' | 'dying' | 'respawning' | 'won' | 'lost'
+        this.stateTimer = 2000; // "READY!" delay
 
         // Score popup graphics
         this.scorePopups = [];
@@ -48,27 +49,42 @@ class GameScene extends Phaser.Scene {
             'READY!',
             { fontSize: '14px', fill: '#ffff00', fontFamily: 'monospace' }
         ).setOrigin(0.5).setDepth(20);
-
-        this.time.delayedCall(2000, () => {
-            if (this.readyText) this.readyText.destroy();
-        });
     }
 
     update(time, delta) {
         if (this.state === 'won' || this.state === 'lost') return;
 
-        this.stateTimer -= delta;
-
-        if (this.state === 'dying') {
-            this.pacman.update(delta);
-            if (this.pacman.isDeathComplete()) {
-                this.state = 'respawning';
-                this.stateTimer = 1500;
+        // Ready countdown
+        if (this.state === 'ready') {
+            this.stateTimer -= delta;
+            if (this.stateTimer <= 0) {
+                this.state = 'playing';
+                if (this.readyText) {
+                    this.readyText.destroy();
+                    this.readyText = null;
+                }
             }
             return;
         }
 
+        // Dying: run death animation, then either respawn or game over
+        if (this.state === 'dying') {
+            this.pacman.update(delta);
+            if (this.pacman.isDeathComplete()) {
+                this.ghosts.forEach(g => g.graphics.setVisible(true));
+                if (this.scoreSystem.lives <= 0) {
+                    this.endGame(false);
+                } else {
+                    this.state = 'respawning';
+                    this.stateTimer = 1500;
+                }
+            }
+            return;
+        }
+
+        // Respawning: brief pause before resetting
         if (this.state === 'respawning') {
+            this.stateTimer -= delta;
             if (this.stateTimer <= 0) {
                 this.pacman.reset();
                 this.ghosts.forEach(g => g.reset());
@@ -118,7 +134,7 @@ class GameScene extends Phaser.Scene {
                 ghost.x, ghost.y
             );
 
-            if (dist < TILE_SIZE * 0.75) {
+            if (dist < TILE_SIZE * 0.8) {
                 if (ghost.isFrightened()) {
                     ghost.eaten();
                     const points = this.scoreSystem.eatGhost();
@@ -133,22 +149,8 @@ class GameScene extends Phaser.Scene {
     killPacman() {
         this.state = 'dying';
         this.pacman.die();
-
-        // Hide ghosts during death
-        this.ghosts.forEach(g => {
-            g.graphics.setVisible(false);
-        });
-
-        const lives = this.scoreSystem.loseLife();
-
-        this.time.delayedCall(1500, () => {
-            this.ghosts.forEach(g => g.graphics.setVisible(true));
-            if (lives <= 0) {
-                this.time.delayedCall(500, () => {
-                    this.endGame(false);
-                });
-            }
-        });
+        this.ghosts.forEach(g => g.graphics.setVisible(false));
+        this.scoreSystem.loseLife();
     }
 
     showScorePopup(x, y, points) {
@@ -183,7 +185,13 @@ class GameScene extends Phaser.Scene {
 
     endGame(won) {
         this.state = won ? 'won' : 'lost';
-        this.time.delayedCall(1500, () => {
+
+        if (won) {
+            // Flash effect on win
+            this.cameras.main.flash(500, 255, 255, 255);
+        }
+
+        this.time.delayedCall(2000, () => {
             this.scene.start('EndScene', {
                 won: won,
                 score: this.scoreSystem.score,

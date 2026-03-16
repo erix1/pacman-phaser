@@ -57,39 +57,37 @@ class Pacman {
             const nextCol = tile.col + this.queuedDir.dx;
             const nextRow = tile.row + this.queuedDir.dy;
             if (!MazeUtils.isWall(nextCol, nextRow, false)) {
-                this.currentDir = this.queuedDir;
-                // Snap to tile center when changing direction
+                // Snap to tile center when changing direction for clean turns
                 if (this.queuedDir !== this.currentDir) {
                     this.x = tileCenter.x;
                     this.y = tileCenter.y;
                 }
+                this.currentDir = this.queuedDir;
             }
         }
 
         // Move in current direction
         const speed = PACMAN_SPEED * dt;
-        const nextX = this.x + this.currentDir.dx * speed;
-        const nextY = this.y + this.currentDir.dy * speed;
+        const dir = this.currentDir;
 
-        // Check wall collision ahead
-        const lookAheadX = nextX + this.currentDir.dx * (TILE_SIZE / 2 - 1);
-        const lookAheadY = nextY + this.currentDir.dy * (TILE_SIZE / 2 - 1);
-        const lookTile = MazeUtils.worldToTile(lookAheadX, lookAheadY);
+        // Tile-based wall check: can we enter the next tile in our direction?
+        const nextCol = tile.col + dir.dx;
+        const nextRow = tile.row + dir.dy;
 
-        if (!MazeUtils.isWall(lookTile.col, lookTile.row, false)) {
-            this.x = nextX;
-            this.y = nextY;
+        if (MazeUtils.isWall(nextCol, nextRow, false)) {
+            // Slide toward current tile center but don't overshoot it
+            if (dir.dx > 0) this.x = Math.min(this.x + speed, tileCenter.x);
+            else if (dir.dx < 0) this.x = Math.max(this.x - speed, tileCenter.x);
+            else if (dir.dy > 0) this.y = Math.min(this.y + speed, tileCenter.y);
+            else if (dir.dy < 0) this.y = Math.max(this.y - speed, tileCenter.y);
         } else {
-            // Snap to tile center when hitting wall
-            const currentTile = MazeUtils.worldToTile(this.x, this.y);
-            const snap = MazeUtils.tileToWorld(currentTile.col, currentTile.row);
-            this.x = snap.x;
-            this.y = snap.y;
+            this.x += dir.dx * speed;
+            this.y += dir.dy * speed;
         }
 
-        // Tunnel wrap
-        if (this.x < 0) this.x = COLS * TILE_SIZE;
-        if (this.x > COLS * TILE_SIZE) this.x = 0;
+        // Tunnel wrap (snap to opposite tile center)
+        if (this.x <= 0) this.x = (COLS - 1) * TILE_SIZE + TILE_SIZE / 2;
+        if (this.x >= COLS * TILE_SIZE) this.x = TILE_SIZE / 2;
 
         this.draw();
     }

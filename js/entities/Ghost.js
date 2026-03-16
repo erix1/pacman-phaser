@@ -95,12 +95,12 @@ class Ghost {
         }
 
         if (this.mode === GHOST_MODE.SCATTER) {
-            // Corner targets
+            // Corner targets (must be walkable tiles inside maze bounds)
             const corners = [
-                { col: 25, row: 0 },
-                { col: 2,  row: 0 },
-                { col: 27, row: 30 },
-                { col: 0,  row: 30 },
+                { col: 25, row: 1  }, // Blinky: top-right
+                { col: 2,  row: 1  }, // Pinky:  top-left
+                { col: 25, row: 29 }, // Inky:   bottom-right
+                { col: 2,  row: 29 }, // Clyde:  bottom-left
             ];
             return corners[this.id % 4];
         }
@@ -227,9 +227,9 @@ class Ghost {
             this.y = newY;
         }
 
-        // Tunnel wrap
-        if (this.x < 0) this.x = COLS * TILE_SIZE;
-        if (this.x > COLS * TILE_SIZE) this.x = 0;
+        // Tunnel wrap (snap to opposite tile center)
+        if (this.x <= 0) this.x = (COLS - 1) * TILE_SIZE + TILE_SIZE / 2;
+        if (this.x >= COLS * TILE_SIZE) this.x = TILE_SIZE / 2;
 
         // Re-enter ghost house when eaten
         if (this.mode === GHOST_MODE.EATEN) {
